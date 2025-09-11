@@ -118,3 +118,30 @@ func handlerFollowing(s *state, cmd command, currentUser database.User) error {
 
 	return nil
 }
+
+func handlerUnfollow(s *state, cmd command, currentUser database.User) error {
+	if len(cmd.args) != 1 {
+		return errors.New("illegal argument, usage: follow <feed_url>")
+	}
+
+	url := cmd.args[0]
+	feed, err := s.db.GetFeedByURL(
+		context.Background(),
+		url,
+	)
+	if err != nil {
+		return fmt.Errorf("error getting feed info: %w", err)
+	}
+
+	if err = s.db.DeleteFeedFollow(
+		context.Background(),
+		database.DeleteFeedFollowParams{
+			UserID: currentUser.ID,
+			FeedID: feed.ID,
+		},
+	); err != nil {
+		return fmt.Errorf("error creating feed follow: %w", err)
+	}
+
+	return nil
+}
