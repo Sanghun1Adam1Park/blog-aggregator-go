@@ -46,8 +46,8 @@ func handlerRegsiter(s *state, cmd command) error {
 		context.Background(),
 		database.CreateUserParams{
 			ID:        uuid.New(),
-			CreatedAt: sql.NullTime{Time: time.Now(), Valid: true},
-			UpdatedAt: sql.NullTime{Time: time.Now(), Valid: true},
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
 			Name:      name,
 		},
 	)
