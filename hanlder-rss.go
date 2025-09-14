@@ -11,16 +11,21 @@ import (
 )
 
 func handlerAgg(s *state, cmd command) error {
-	if len(cmd.args) != 0 {
-		return errors.New("illegal argument, usage: agg")
+	if len(cmd.args) != 1 {
+		return errors.New("illegal argument, usage: agg <time_between_reqs>")
 	}
 
-	rssFeed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	requestedTime := cmd.args[0]
+	timeBetweenRequests, err := time.ParseDuration(requestedTime)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid time format: %w", err)
 	}
 
-	fmt.Println(rssFeed)
+	fmt.Printf("Collecting feeds every %s\n", requestedTime)
+	ticker := time.NewTicker(timeBetweenRequests)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s.db)
+	}
 
 	return nil
 }

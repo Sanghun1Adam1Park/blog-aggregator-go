@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/Sanghun1Adam1Park/blog-aggregator/internal/database"
 )
 
 type RSSFeed struct {
@@ -64,4 +66,27 @@ func unescapeFeed(f *RSSFeed) {
 		f.Channel.Item[i].Title = html.UnescapeString(f.Channel.Item[i].Title)
 		f.Channel.Item[i].Description = html.UnescapeString(f.Channel.Item[i].Description)
 	}
+}
+
+func scrapeFeeds(db *database.Queries) error {
+	feed, err := db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return fmt.Errorf("error getting next feed to fetch: %w", err)
+	}
+
+	markedFeed, err := db.MarkFeedFetched(context.Background(), feed.Url)
+	if err != nil {
+		return fmt.Errorf("error marking feed fetched: %w", err)
+	}
+
+	fetchedFeed, err := fetchFeed(context.Background(), markedFeed.Url)
+	if err != nil {
+		return fmt.Errorf("error fetching feed: %w", err)
+	}
+
+	for _, item := range fetchedFeed.Channel.Item {
+		fmt.Printf(" - %s\n", item.Title)
+	}
+
+	return nil
 }

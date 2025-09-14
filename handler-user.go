@@ -80,7 +80,7 @@ func handlerUsers(s *state, cmd command) error {
 
 	users, err := s.db.GetUsers(context.Background())
 	if err != nil {
-		return fmt.Errorf("error retreiving users from table: %w", err)
+		return fmt.Errorf("error retrieving users from table: %w", err)
 	}
 
 	for _, user := range users {
