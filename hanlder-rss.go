@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/Sanghun1Adam1Park/blog-aggregator/internal/database"
@@ -26,8 +27,6 @@ func handlerAgg(s *state, cmd command) error {
 	for ; ; <-ticker.C {
 		scrapeFeeds(s.db)
 	}
-
-	return nil
 }
 
 func handlerAddFeed(s *state, cmd command, currentUser database.User) error {
@@ -146,6 +145,39 @@ func handlerUnfollow(s *state, cmd command, currentUser database.User) error {
 		},
 	); err != nil {
 		return fmt.Errorf("error creating feed follow: %w", err)
+	}
+
+	return nil
+}
+
+func handlerBrowse(s *state, cmd command, currentUser database.User) error {
+	if len(cmd.args) != 0 || len(cmd.args) != 1 {
+		return errors.New("illegal argument, usage: browse [limit]")
+	}
+
+	var limit int32
+	if len(cmd.args) == 1 {
+		intInput, err := strconv.Atoi(cmd.args[0])
+		if err != nil {
+			return fmt.Errorf("invalid limit: %w", err)
+		}
+		limit = int32(intInput)
+	}
+	limit = 2
+
+	posts, err := s.db.GetPostsForUser(
+		context.Background(),
+		database.GetPostsForUserParams{
+			UserID: currentUser.ID,
+			Limit:  limit,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("error getting posts for user: %w", err)
+	}
+
+	for _, post := range posts {
+		fmt.Printf(" - %s\n", post.Title)
 	}
 
 	return nil

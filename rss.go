@@ -2,14 +2,18 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"html"
 	"io"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Sanghun1Adam1Park/blog-aggregator/internal/database"
+	"github.com/google/uuid"
 )
 
 type RSSFeed struct {
@@ -86,6 +90,35 @@ func scrapeFeeds(db *database.Queries) error {
 
 	for _, item := range fetchedFeed.Channel.Item {
 		fmt.Printf(" - %s\n", item.Title)
+		publishedAt := sql.NullTime{}
+		if t, err := time.Parse(time.RFC1123Z, item.PubDate); err == nil {
+			publishedAt = sql.NullTime{
+				Time:  t,
+				Valid: true,
+			}
+		}
+
+		_, err = db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:        uuid.New(),
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+			FeedID:    feed.ID,
+			Title:     item.Title,
+			Description: sql.NullString{
+				String: item.Description,
+				Valid:  true,
+			},
+			Url:         item.Link,
+			PublishedAt: publishedAt,
+		})
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+				continue
+			}
+			log.Printf("Couldn't create post: %v", err)
+			continue
+		}
+
 	}
 
 	return nil
